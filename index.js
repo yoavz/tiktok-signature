@@ -1,36 +1,23 @@
-const { webkit, devices } = require("playwright-webkit");
+const { chromium, devices } = require("playwright-chromium");
 const iPhone11 = devices["iPhone 11 Pro"];
 
 class Signer {
   userAgent =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
-  args = [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-infobars",
-    "--window-position=0,0",
-    "--ignore-certifcate-errors",
-    "--ignore-certifcate-errors-spki-list",
-  ];
+  args = []
 
-  constructor(userAgent, tac, browser) {
-    if (userAgent) {
-      this.userAgent = userAgent;
-    }
-
-    if (tac) {
-      this.tac = tac;
-    }
-
-    if (browser) {
-      this.browser = browser;
-      this.isExternalBrowser = true;
-    }
-
-    this.args.push(`--user-agent="${this.userAgent}"`);
-
+  constructor() {
     this.options = {
-      args: [],
+      args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process', // <- this one doesn't works in Windows
+          '--disable-gpu'
+      ],
       ignoreDefaultArgs: ["--mute-audio", "--hide-scrollbars"],
       headless: true,
       ignoreHTTPSErrors: true,
@@ -39,7 +26,7 @@ class Signer {
 
   async init() {
     if (!this.browser) {
-      this.browser = await webkit.launch(this.options);
+      this.browser = await chromium.launch(this.options);
     }
 
     let emulateTemplate = { ...iPhone11 };
@@ -58,17 +45,8 @@ class Signer {
     await this.page.goto("https://www.tiktok.com/@rihanna?lang=en", {
       waitUntil: "load",
     });
-    // Uncomment the following line for unwanted audio
-    // await this.page.click(".swiper-wrapper");
-
-    if (this.tac) {
-      await this.page.evaluate((x) => {
-        window.tac = x;
-      }, this.tac);
-    }
 
     await this.page.evaluate(() => {
-
       if (typeof window.byted_acrawler.sign !== "function") {
         throw "No function found";
       }
@@ -83,7 +61,7 @@ class Signer {
         }
         return window.byted_acrawler.sign({ url: newUrl });
       };
-    }, this.tac);
+    });
 
     return this;
   }
@@ -111,7 +89,7 @@ class Signer {
   }
 
   async close() {
-    if (this.browser && !this.isExternalBrowser) {
+    if (this.browser) {
       await this.browser.close();
       this.browser = null;
     }
