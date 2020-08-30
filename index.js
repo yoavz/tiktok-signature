@@ -1,10 +1,8 @@
 const { chromium, devices } = require("playwright-chromium");
-const iPhone11 = devices["iPhone 11 Pro"];
 
 class Signer {
   userAgent =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
-  args = []
 
   constructor() {
     this.options = {
@@ -29,15 +27,7 @@ class Signer {
       this.browser = await chromium.launch(this.options);
     }
 
-    let emulateTemplate = { ...iPhone11 };
-    emulateTemplate.viewport.width = getRandomInt(320, 1920);
-    emulateTemplate.viewport.height = getRandomInt(320, 1920);
-
     this.context = await this.browser.newContext({
-      ...emulateTemplate,
-      deviceScaleFactor: getRandomInt(1, 3),
-      isMobile: Math.random() > 0.5,
-      hasTouch: Math.random() > 0.5,
       userAgent: this.userAgent,
     });
 
@@ -47,6 +37,9 @@ class Signer {
     });
 
     await this.page.evaluate(() => {
+      // Tik Tok client-side signature function will fail without this line.
+      delete navigator.__proto__.webdriver;
+
       if (typeof window.byted_acrawler.sign !== "function") {
         throw "No function found";
       }
@@ -97,13 +90,6 @@ class Signer {
       this.page = null;
     }
   }
-}
-
-function getRandomInt(a, b) {
-  const min = Math.min(a, b);
-  const max = Math.max(a, b);
-  const diff = max - min + 1;
-  return min + Math.floor(Math.random() * Math.floor(diff));
 }
 
 module.exports = Signer;
