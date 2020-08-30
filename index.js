@@ -1,56 +1,30 @@
-const { webkit, devices } = require("playwright-webkit");
-const iPhone11 = devices["iPhone 11 Pro"];
+const { webkit } = require("playwright-webkit");
+const { chromium } = require("playwright-chromium");
 
 class Signer {
+  // userAgent =
+  //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
   userAgent =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
-  args = [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-infobars",
-    "--window-position=0,0",
-    "--ignore-certifcate-errors",
-    "--ignore-certifcate-errors-spki-list",
-  ];
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
 
-  constructor(userAgent, tac, browser) {
-    if (userAgent) {
-      this.userAgent = userAgent;
-    }
-
-    if (tac) {
-      this.tac = tac;
-    }
-
-    if (browser) {
-      this.browser = browser;
-      this.isExternalBrowser = true;
-    }
-
-    this.args.push(`--user-agent="${this.userAgent}"`);
-
+  constructor() {
     this.options = {
-      args: [],
       ignoreDefaultArgs: ["--mute-audio", "--hide-scrollbars"],
       headless: true,
+      userAgent: this.userAgent,
       ignoreHTTPSErrors: true,
     };
   }
 
   async init() {
+    console.log(this.options)
+
     if (!this.browser) {
-      this.browser = await webkit.launch(this.options);
+      this.browser = await chromium.launch(this.options);
+      //this.browser = await webkit.launch(this.options);
     }
 
-    let emulateTemplate = { ...iPhone11 };
-    emulateTemplate.viewport.width = getRandomInt(320, 1920);
-    emulateTemplate.viewport.height = getRandomInt(320, 1920);
-
     this.context = await this.browser.newContext({
-      ...emulateTemplate,
-      deviceScaleFactor: getRandomInt(1, 3),
-      isMobile: Math.random() > 0.5,
-      hasTouch: Math.random() > 0.5,
       userAgent: this.userAgent,
     });
 
@@ -58,16 +32,9 @@ class Signer {
     await this.page.goto("https://www.tiktok.com/@rihanna?lang=en", {
       waitUntil: "load",
     });
-    // Uncomment the following line for unwanted audio
-    // await this.page.click(".swiper-wrapper");
-
-    if (this.tac) {
-      await this.page.evaluate((x) => {
-        window.tac = x;
-      }, this.tac);
-    }
 
     await this.page.evaluate(() => {
+      delete navigator.__proto__.webdriver
 
       if (typeof window.byted_acrawler.sign !== "function") {
         throw "No function found";
@@ -83,7 +50,7 @@ class Signer {
         }
         return window.byted_acrawler.sign({ url: newUrl });
       };
-    }, this.tac);
+    });
 
     return this;
   }
