@@ -20,6 +20,15 @@ class Signer {
       headless: true,
       ignoreHTTPSErrors: true,
     };
+
+    if (process.env.PROXY) {
+      console.log("Using proxy: ", process.env.PROXY)
+      this.options.proxy = {
+          server: process.env.PROXY,
+          username: process.env.PROXY_USER,
+          password: process.env.PROXY_PASS
+      }
+    }
   }
 
   async init() {
@@ -40,6 +49,14 @@ class Signer {
       // Tik Tok client-side signature function will fail without this line.
       delete navigator.__proto__.webdriver;
 
+      if (!window) {
+        throw "No window found"
+      }
+
+      if (!window.byted_acrawler) {
+        throw "No window.byted_acrawler found!";
+      }
+
       if (typeof window.byted_acrawler.sign !== "function") {
         throw "No function found";
       }
@@ -54,6 +71,8 @@ class Signer {
         }
         return window.byted_acrawler.sign({ url: newUrl });
       };
+    }).catch(e => {
+      console.log(e);
     });
 
     return this;
